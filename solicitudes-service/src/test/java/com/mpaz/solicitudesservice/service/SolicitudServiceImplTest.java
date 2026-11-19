@@ -21,11 +21,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.mpaz.solicitudesservice.entity.Solicitud;
 import com.mpaz.solicitudesservice.repository.SolicitudRepository;
 
+import static org.mockito.Mockito.atLeastOnce;
+import org.mockito.Answers;
+import org.springframework.web.reactive.function.client.WebClient;
+import com.mpaz.solicitudesservice.entity.SolicitudItem;
+
 @ExtendWith(MockitoExtension.class)
 class SolicitudServiceImplTest {
 
     @Mock
     private SolicitudRepository repository;
+
+    // simula WebClient (inventario y trazabilidad)
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private WebClient.Builder webClientBuilder;
 
     @InjectMocks
     private SolicitudServiceImpl service;
@@ -124,5 +133,34 @@ class SolicitudServiceImplTest {
 
         assertEquals("Entregada", service.entregar(1L).get().getEstado());
         assertEquals("Devuelta", service.devolver(1L).get().getEstado());
+    }
+
+    // comunicación con inventario
+    @Test
+    void aceptar_conItems_descuentaStockYQuedaAceptada() {
+        SolicitudItem item = new SolicitudItem();
+        item.setEquipoId(1L);
+        item.setCantidad(2);
+        solicitud.setItems(List.of(item));
+        when(repository.findById(1L)).thenReturn(Optional.of(solicitud));
+        when(repository.save(any(Solicitud.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Optional<Solicitud> resultado = service.aceptar(1L);
+
+        assertEquals("Aceptada", resultado.get().getEstado());
+        verify(webClientBuilder, atLeastOnce()).build();
+    }
+
+    @Test
+    void aceptar_inventarioFalla_lanzaErrorYNoGuarda() {
+        SolicitudItem item = new SolicitudItem();
+        item.setEquipoId(1L);
+        item.setCantidad(2);
+        solicitud.setItems(List.of(item));
+        when(repository.findById(1L)).thenReturn(Optional.of(solicitud));
+        when(webClientBuilder.build()).thenThrow(new RuntimeException("Inventario no disponible"));
+
+        assertThrows(IllegalArgumentException.class, () -> service.aceptar(1L));
+        verify(repository, never()).save(any());
     }
 }

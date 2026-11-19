@@ -6,6 +6,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 
 @Data
 @Entity
@@ -29,4 +35,8 @@ public class Solicitud {
 
     public Solicitud() {
     }
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "solicitud_items", joinColumns = @JoinColumn(name = "solicitud_id"))
+    private List<SolicitudItem> items = new ArrayList<>();
 }
