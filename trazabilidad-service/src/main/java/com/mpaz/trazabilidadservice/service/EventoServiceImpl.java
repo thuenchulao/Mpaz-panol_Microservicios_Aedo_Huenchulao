@@ -12,7 +12,7 @@ import com.mpaz.trazabilidadservice.repository.EventoSolicitudRepository;
 public class EventoServiceImpl implements EventoService {
 
     private static final List<String> ESTADOS =
-            List.of("Solicitado", "Aceptada", "Rechazada", "Entregada", "Devuelta");
+            List.of("Pendiente", "Aceptada", "Rechazada", "Entregada", "Devuelta");
 
     private final EventoSolicitudRepository repository;
 
